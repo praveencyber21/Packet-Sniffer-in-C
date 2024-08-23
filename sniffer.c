@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <linux/if_ether.h>
@@ -33,7 +34,7 @@ int main(int argc, char const *argv[])
         perror("[!] Socket error");
         exit(EXIT_FAILURE);
     }
-    printf("[*] Socket created\n");
+    printf("[*] Packet sniffer started...\n\n");
 
     while (1)
     {
