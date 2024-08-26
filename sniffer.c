@@ -8,6 +8,8 @@
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/igmp.h>
 
 // Process packet
 void process_packet(unsigned char *, int);
@@ -18,6 +20,8 @@ void print_icmp_packet(unsigned char *, int);
 void print_igmp_packet(unsigned char *, int);
 void print_tcp_packet(unsigned char *, int);
 void print_udp_packet(unsigned char *, int);
+void print_other_packet(unsigned char *, int);
+void print_data(unsigned char *, int);
 
 // Display a packet in console
 void display_packet(unsigned char *, int);
@@ -73,10 +77,10 @@ void process_packet(unsigned char *buffer, int size)
     switch (iph->protocol)
     {
     case 1:
-        // print_icmp_packet(buffer, size);
+        print_icmp_packet(buffer, size);
         break;
     case 2:
-        // print_igmp_packet(buffer, size);
+        print_igmp_packet(buffer, size);
         break;
     case 6:
 
@@ -85,6 +89,9 @@ void process_packet(unsigned char *buffer, int size)
     case 17:
 
         print_udp_packet(buffer, size);
+        break;
+    default:
+        print_other_packet(buffer, size);
         break;
     }
 }
@@ -141,7 +148,7 @@ void print_ip_header(unsigned char *buffer, int size)
     memset(&dest, 0, sizeof(dest));
     dest.sin_addr.s_addr = iph->daddr;
 
-    fprintf(logfile, "\n");
+    fprintf(logfile, "                                                  TIME : %s\n", __TIME__);
     fprintf(logfile, "IP HEADER\n");
     fprintf(logfile, "    |-IP Version          :%d\n", (unsigned int)iph->version);
     fprintf(logfile, "    |-IP Header Length    :%d DWORDS or %d Bytes\n", (unsigned int)iph->ihl, (unsigned int)(iph->ihl * 4));
@@ -156,6 +163,43 @@ void print_ip_header(unsigned char *buffer, int size)
 }
 void print_icmp_packet(unsigned char *buffer, int size)
 {
+    unsigned short iphdrlen;
+    struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
+    iphdrlen = iph->ihl * 4;
+
+    struct icmphdr *icmph = (struct icmphdr *)(buffer + iphdrlen + sizeof(struct ethhdr));
+
+    fprintf(logfile, "\n");
+    fprintf(logfile, "****************************** ICMP HEADER ******************************\n");
+
+    print_ip_header(buffer, size);
+
+    fprintf(logfile, "ICMP HEADER\n");
+    fprintf(logfile, "     |-Type           :%d\n", ntohs(icmph->type));
+    fprintf(logfile, "     |-Code           :%d\n", ntohs(icmph->code));
+    fprintf(logfile, "     |-Checksum       :%d\n", ntohs(icmph->checksum));
+
+    fprintf(logfile, "\n");
+    fprintf(logfile, "\n########################################################################");
+}
+
+void print_igmp_packet(unsigned char *buffer, int size)
+{
+    unsigned short iphdrlen;
+    struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
+    iphdrlen = iph->ihl * 4;
+
+    struct igmphdr *igmph = (struct igmphdr *)(buffer + iphdrlen + sizeof(struct ethhdr));
+
+    fprintf(logfile, "\n");
+    fprintf(logfile, "****************************** IGMP HEADER ******************************\n");
+
+    print_ip_header(buffer, size);
+
+    fprintf(logfile, "\n");
+    fprintf(logfile, "IGMP HEADER\n");
+    // fprintf(logfile, "     |- %d\n", igmph->type);
+    fprintf(logfile, "\n########################################################################");
 }
 
 void print_tcp_packet(unsigned char *buffer, int size)
@@ -212,4 +256,21 @@ void print_udp_packet(unsigned char *buffer, int size)
     fprintf(logfile, "    |-UDP Checksum        :%d\n", ntohs(udph->check));
 
     fprintf(logfile, "\n");
+}
+
+void print_other_packet(unsigned char *buffer, int size)
+{
+    unsigned short iphdrlen;
+
+    struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
+    iphdrlen = iph->ihl * 4;
+
+    fprintf(logfile, "****************************** OTHER HEADER ******************************\n");
+    print_ip_header(buffer, size);
+
+    fprintf(logfile, "OTHER HEADER\n");
+}
+
+void print_data(unsigned char *buffer, int size)
+{
 }
